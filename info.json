@@ -1,0 +1,12 @@
+{
+  "commit": {
+    "commit": "c280a08958c84fdd022daef8604e68696ef03c68",
+    "author": "alejandro baranek <alejandrobaranek@gmail.com>",
+    "time": "2020-07-05 16:31:02",
+    "files": 4,
+    "merge": false,
+    "message": "Release 0.4.4\n"
+  },
+  "remote": "https://github.com/ropensci/Rpolyhedra",
+  "pkg": "Rpolyhedra"
+}
