@@ -1,0 +1,257 @@
+# Rpolyhedra
+
+[![Downloads](http://cranlogs.r-pkg.org/badges/Rpolyhedra?color=brightgreen)](https://www.r-pkg.org:443/pkg/Rpolyhedra)
+[![Downloads](http://cranlogs.r-pkg.org/badges/grand-total/Rpolyhedra?color=brightgreen)](https://www.r-pkg.org:443/pkg/Rpolyhedra)
+
+This package is a polyhedra database based on the poly package found on
+<https://netlib.org/polyhedra/> ([Original Help
+message](https://raw.githubusercontent.com/ropensci/Rpolyhedra/master/man/html/poly_original_help_message.html)),
+and the polyhedra definitions found on <http://dmccooey.com/polyhedra/>.
+As such, Rpolyhedra provides with the following:
+
+1.  A module to scrape the polyhedra for the different sources found
+    with features for incremental correction of issues found and to be
+    found in scraping process.
+2.  A database of the scraped polyhedra.
+3.  An R6 polyhedron representation with ‘rgl’ package visualizing
+    capabilities.
+
+# Preview
+
+Through
+[Rpolyhedraexplorer](https://qbotics.shinyapps.io/rpolyhedra-explorer/)
+you can navigate the polyhedra database without actually installing R
+environment.
+
+# How to get started
+
+``` r
+
+install.packages("Rpolyhedra")
+```
+
+# How to get started (Development version)
+
+Install the R package using the following commands on the R console:
+
+``` r
+
+devtools::install_github("ropensci/Rpolyhedra", build_opts = NULL)
+```
+
+# Loading the database
+
+``` r
+
+library(Rpolyhedra)
+```
+
+``` r
+
+# if want to switch to fullDB in user filespace, it will ask you for downloading the full database to your home directory
+switchToFullDatabase()
+```
+
+# A simple example of 5 regular polyhedra
+
+To get started execute the following commands:
+
+``` r
+
+# 0.  Load libraries
+library(knitr)
+library(rgl)
+# For foarding webgl output to knitr
+knit_hooks$set(webgl = hook_webgl)
+library(dplyr)
+#> 
+#> Attaching package: 'dplyr'
+#> The following objects are masked from 'package:stats':
+#> 
+#>     filter, lag
+#> The following objects are masked from 'package:base':
+#> 
+#>     intersect, setdiff, setequal, union
+```
+
+``` r
+
+
+# 1.  Obtain 5 regular solids
+polyhedra.2.draw <- getAvailablePolyhedra(source = "netlib")
+polyhedra.2.draw <- polyhedra.2.draw %>%
+                        filter(scraped.name %in%
+                            c("tetrahedron", "octahedron", "cube",
+                               "icosahedron", "dodecahedron"))
+
+# 2. Setup colors and scales
+n <- nrow(polyhedra.2.draw)
+polyhedron.colors <- rainbow(n)
+
+polyhedron.scale <- 5
+```
+
+``` r
+
+# For interactive RGL window
+#```{r, render, webgl=TRUE}
+# 3. open and setup RGL window
+open3d()
+```
+
+``` R
+#> null 
+#>    2
+par3d(FOV = 1)
+bg3d( sphere =FALSE, fogtype = "none", color=c("black"))
+view3d(theta = 0, phi=0, zoom=0.8, fov=1)
+# 4. for each polyhedron, setup rotation, position and render
+for (i in seq_len(n)) {
+  # Obtain polyhedron
+  polyhedron.row <- polyhedra.2.draw[i,]
+  polyhedron.name <- polyhedron.row$scraped.name
+  polyhedron <- getPolyhedron(source = polyhedron.row$source, polyhedron.name)
+
+  # Setup angles, position into transformationMatrix
+  current.angle <- i/n * 2 * pi
+  tm <- rotationMatrix(current.angle, 1, 0, 0)
+  x.pos <- round(polyhedron.scale * sin(current.angle), 2)
+  y.pos <- round(polyhedron.scale * cos(current.angle), 2)
+  tm <- tm %*% translationMatrix(x.pos, y.pos, 0)
+
+  # Render
+  print(paste("Drawing ", polyhedron.name, " rotated ", round(current.angle, 2),
+              " in (1,0,0) axis. Translated to (", x.pos, ",", y.pos, ",0)",
+              " with color ", polyhedron.colors[i], sep = ""))
+  shape.rgl <- polyhedron$getRGLModel(transformation.matrix = tm)
+  shade3d(shape.rgl, color = polyhedron.colors[i])
+}
+#> [1] "Drawing tetrahedron rotated 1.26 in (1,0,0) axis. Translated to (4.76,1.55,0) with color #FF0000"
+#> [1] "Drawing octahedron rotated 2.51 in (1,0,0) axis. Translated to (2.94,-4.05,0) with color #CCFF00"
+#> [1] "Drawing cube rotated 3.77 in (1,0,0) axis. Translated to (-2.94,-4.05,0) with color #00FF66"
+#> [1] "Drawing icosahedron rotated 5.03 in (1,0,0) axis. Translated to (-4.76,1.55,0) with color #0066FF"
+#> [1] "Drawing dodecahedron rotated 6.28 in (1,0,0) axis. Translated to (0,5,0) with color #CC00FF"
+
+#rgl::rglwidget()
+#rgl::rgl.snapshot("man/figures/README-5-polyhedra.png")
+```
+
+![5-polyhedra](reference/figures/README-5-polyhedra.png)
+
+5-polyhedra
+
+## sources
+
+### netlib
+
+Includes 142 polyhedra definitions. The PHD format was created to
+describe the geometric polyhedron definitions derived mathematically by
+Andrew Hume and by the Kaleido program of Zvi Har’El.
+
+PHD files were generated using [poly2](https://netlib.org/poly2/readme)
+library (no longer maintained). Although the code is available, specific
+programming skills are required to run it.
+
+PHD files can be found in `extdata/netlib.org/polyhedra/index.html`
+
+### dmccooey
+
+Includes 767 polyhedra definitions. The [polyhedra
+database](http://dmccooey.com/polyhedra/) built by David Mccooey has an
+open format which has been scraped to feed Rpolyhedra database
+
+dmccooey files can be found in `extdata/dmccooey.com/polyhedra/`
+
+# Troubleshooting
+
+## devtools
+
+### Ubuntu
+
+``` bash
+apt-get install libcurl4-openssl-dev
+```
+
+### Windows
+
+run end user CRAN version
+
+### macOS brew
+
+``` bash
+brew install openssl
+```
+
+After, in R:
+
+``` r
+
+install.packages("devtools")
+```
+
+## rgl
+
+### Ubuntu
+
+``` bash
+sudo apt-get install r-cran-rgl
+```
+
+Please note that the ‘Rpolyhedra’ project is released with a
+[Contributor Code of
+Conduct](https://github.com/ropensci/Rpolyhedra/blob/master/CODE_OF_CONDUCT.md).
+By
+[contributing](https://github.com/ropensci/Rpolyhedra/blob/master/CONTRIBUTING.md)
+to this project, you agree to abide by its terms.
+
+# Package index
+
+## All functions
+
+- [`PolyhedraDatabase`](https://docs.ropensci.org/Rpolyhedra/reference/PolyhedraDatabase.md)
+  : Polyhedra database
+- [`Polyhedron`](https://docs.ropensci.org/Rpolyhedra/reference/Polyhedron.md)
+  : Polyhedron
+- [`PolyhedronState`](https://docs.ropensci.org/Rpolyhedra/reference/PolyhedronState.md)
+  : PolyhedronState
+- [`PolyhedronStateDefined`](https://docs.ropensci.org/Rpolyhedra/reference/PolyhedronStateDefined.md)
+  : PolyhedronStateDefined
+- [`PolyhedronStateDeserializer`](https://docs.ropensci.org/Rpolyhedra/reference/PolyhedronStateDeserializer.md)
+  : PolyhedronStateDeserializer
+- [`PolyhedronStateDmccooeyScraper`](https://docs.ropensci.org/Rpolyhedra/reference/PolyhedronStateDmccooeyScraper.md)
+  : PolyhedronStateDmccooeyScraper
+- [`PolyhedronStateNetlibScraper`](https://docs.ropensci.org/Rpolyhedra/reference/PolyhedronStateNetlibScraper.md)
+  : PolyhedronStateNetlibScraper
+- [`Rpolyhedra-package`](https://docs.ropensci.org/Rpolyhedra/reference/Rpolyhedra-package.md)
+  [`Rpolyhedra`](https://docs.ropensci.org/Rpolyhedra/reference/Rpolyhedra-package.md)
+  : Rpolyhedra: Polyhedra Database
+- [`genLogger()`](https://docs.ropensci.org/Rpolyhedra/reference/genLogger.md)
+  : genLogger
+- [`getAvailablePolyhedra()`](https://docs.ropensci.org/Rpolyhedra/reference/getAvailablePolyhedra.md)
+  : Get available polyhedra
+- [`getAvailableSources()`](https://docs.ropensci.org/Rpolyhedra/reference/getAvailableSources.md)
+  : Get available sources
+- [`getLogger()`](https://docs.ropensci.org/Rpolyhedra/reference/getLogger.md)
+  : getLogger
+- [`getPolyhedraObject()`](https://docs.ropensci.org/Rpolyhedra/reference/getPolyhedraObject.md)
+  : Get a polyhedra object
+- [`getPolyhedron()`](https://docs.ropensci.org/Rpolyhedra/reference/getPolyhedron.md)
+  : Get polyhedron
+- [`loggerSetupFile()`](https://docs.ropensci.org/Rpolyhedra/reference/loggerSetupFile.md)
+  : loggerSetupFile
+- [`mutate_cond()`](https://docs.ropensci.org/Rpolyhedra/reference/mutate_cond.md)
+  : mutate_cond
+- [`polyhedronToXML()`](https://docs.ropensci.org/Rpolyhedra/reference/polyhedronToXML.md)
+  : Polyhedron to XML
+- [`scrapePolyhedra()`](https://docs.ropensci.org/Rpolyhedra/reference/scrapePolyhedra.md)
+  : Scrape polyhedra objects
+- [`scrapePolyhedraSources()`](https://docs.ropensci.org/Rpolyhedra/reference/scrapePolyhedraSources.md)
+  : Scrape polyhedra sources
+- [`switchToFullDatabase()`](https://docs.ropensci.org/Rpolyhedra/reference/switchToFullDatabase.md)
+  : Switch to full database
+
+# Articles
+
+### All vignettes
+
+- [Rpolyhedra](https://docs.ropensci.org/Rpolyhedra/articles/Rpolyhedra.md):

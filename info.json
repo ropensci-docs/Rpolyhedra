@@ -1,0 +1,13 @@
+{
+  "commit": {
+    "commit": "9c0986f5de27d368c74303b361f6a7afd2dbd728",
+    "author": "alejandro baranek <alejandrobaranek@gmail.com>",
+    "time": "2026-06-17T23:11:29Z",
+    "files": 1,
+    "merge": false,
+    "message": "[bugfix] ci\n"
+  },
+  "repo": "https://github.com/ropensci/Rpolyhedra",
+  "pkg": "Rpolyhedra",
+  "time": "2026-08-30T07:46:38Z"
+}
